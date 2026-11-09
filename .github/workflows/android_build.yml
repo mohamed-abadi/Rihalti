@@ -12,9 +12,29 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "No ZIP file found in repository root"
+            exit 1
+          fi
+          mkdir extracted
+          unzip -q "$ZIP_FILE" -d extracted
+
+      - name: Find Gradle project
+        run: |
+          SETTINGS=$(find extracted -name settings.gradle -o -name settings.gradle.kts | head -n 1)
+          if [ -z "$SETTINGS" ]; then
+            echo "Gradle settings file not found"
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname "$SETTINGS")" >> $GITHUB_ENV
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -28,10 +48,10 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build APK
-        run: gradle assembleDebug
+        run: gradle -p "$PROJECT_DIR" assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: rahla90-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
