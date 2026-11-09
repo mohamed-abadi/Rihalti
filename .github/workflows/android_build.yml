@@ -26,7 +26,6 @@
           p.write_text(s)
           PY
 
-
 name: Build Rahla90 APK
 
 on:
